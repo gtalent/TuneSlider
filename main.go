@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"json"
+	gfx "wombat/core/graphics"
 )
 
 type show struct {
@@ -11,7 +12,9 @@ type show struct {
 }
 
 type slide struct {
-	Contents string
+	TextColor       gfx.Color
+	BackgroundColor gfx.Color
+	Contents        string
 }
 
 func main() {
@@ -21,6 +24,8 @@ func main() {
 	no := '0'
 	for i := 0; i < 10; i++ {
 		slides[i].Contents = "Slide " + string(no)
+		slides[i].TextColor = gfx.Color{255, 255, 255}
+		slides[i].BackgroundColor = gfx.Color{0, 0, 0}
 		no++
 	}
 	output, err := json.Marshal(&show)
@@ -29,4 +34,3 @@ func main() {
 	}
 	ioutil.WriteFile("song.sld", output, 0644)
 }
-
