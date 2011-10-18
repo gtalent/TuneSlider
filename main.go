@@ -5,12 +5,16 @@ import (
 	"io/ioutil"
 	"json"
 	"time"
+	"sdl/mixer"
 	gfx "wombat/core/graphics"
 	"wombat/core/input"
 )
 
+var kill chan interface{} = make(chan interface{})
+
 type show struct {
 	Slides []slide
+	AudioPath  string
 }
 
 type slide struct {
@@ -21,8 +25,9 @@ type slide struct {
 }
 
 type Drawer struct {
-	screen *gfx.Display
 	slide
+	initialized bool
+	screen *gfx.Display
 	text  gfx.Text
 	font  *gfx.Font
 }
@@ -30,17 +35,21 @@ type Drawer struct {
 func (me *Drawer) init() {
 	me.font.SetColor(me.TextColor)
 	me.font.Write(me.Contents, &me.text)
+	me.initialized = true
 }
 
 func (me *Drawer) Draw(c *gfx.Canvas) {
 	c.SetColor(me.BackgroundColor)
 	c.FillRect(0, 0, me.screen.GetWidth(), me.screen.GetHeight())
 	c.SetColor(me.TextColor)
-	c.DrawText(&me.text, me.screen.GetWidth() / 2 - me.text.Width() / 2, me.screen.GetHeight() / 2 - me.text.Height() / 2)
+	if me.initialized {
+		c.DrawText(&me.text, me.screen.GetWidth() / 2 - me.text.Width() / 2, me.screen.GetHeight() / 2 - me.text.Height() / 2)
+	}
 }
 
 func buildTestInput() {
 	var show show
+	show.AudioPath = "song.ogg"
 	show.Slides = make([]slide, 10)
 	slides := show.Slides
 	no := '0'
@@ -58,6 +67,20 @@ func buildTestInput() {
 	ioutil.WriteFile("song.sld", output, 0644)
 }
 
+func playShow(show show, d *Drawer) {
+	slides := show.Slides
+	song := mixer.LoadMUS(show.AudioPath)
+	song.PlayMusic(1)
+	for i := 0; i < len(slides); i++ {
+		slide := slides[i]
+		d.slide = slide
+		d.init()
+		time.Sleep(slide.Duration * 1000000000)
+	}
+	mixer.FadeOutMusic(3000)
+	song.Free()
+}
+
 func main() {
 	buildTestInput()
 	file, err := ioutil.ReadFile("song.sld")
@@ -66,23 +89,19 @@ func main() {
 	if err != nil {
 		fmt.Println(err.String())
 	}
-	running := true
 	screen := gfx.NewDisplay()
 	screen.Open(800, 600)
+	mixer.OpenAudio(mixer.DEFAULT_FREQUENCY, mixer.DEFAULT_FORMAT, mixer.DEFAULT_CHANNELS, 4096)
 	input.Init()
 	input.AddQuit(func() {
-		running = false
+		kill <- nil
 		screen.Close()
 	})
-	slides := show.Slides
+
 	var d Drawer
 	d.screen = screen
 	d.font = gfx.LoadFont("font.otf", 32)
 	screen.AddDrawer(&d)
-	for i := 0; running && i < len(slides); i++ {
-		slide := slides[i]
-		d.slide = slide
-		d.init()
-		time.Sleep(slide.Duration * 1000000000)
-	}
+	go playShow(show, &d)
+	<-kill
 }
