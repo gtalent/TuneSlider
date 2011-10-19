@@ -28,8 +28,8 @@ import (
 var kill chan interface{} = make(chan interface{})
 
 type show struct {
-	Slides []slide
-	AudioPath  string
+	Slides    []slide
+	AudioPath string
 }
 
 type slide struct {
@@ -42,9 +42,9 @@ type slide struct {
 type Drawer struct {
 	slide
 	initialized bool
-	screen *gfx.Display
-	text  gfx.Text
-	font  *gfx.Font
+	screen      *gfx.Display
+	text        gfx.Text
+	font        *gfx.Font
 }
 
 func (me *Drawer) init() {
@@ -58,7 +58,7 @@ func (me *Drawer) Draw(c *gfx.Canvas) {
 	c.FillRect(0, 0, me.screen.GetWidth(), me.screen.GetHeight())
 	c.SetColor(me.TextColor)
 	if me.initialized {
-		c.DrawText(&me.text, me.screen.GetWidth() / 2 - me.text.Width() / 2, me.screen.GetHeight() / 2 - me.text.Height() / 2)
+		c.DrawText(&me.text, me.screen.GetWidth()/2-me.text.Width()/2, me.screen.GetHeight()/2-me.text.Height()/2)
 	}
 }
 
